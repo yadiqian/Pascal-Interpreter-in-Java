@@ -10,6 +10,13 @@ begin
   begin
     writeln('value of a: ', a);
     a := a + 1;
+    while (a < 15) do 
+    begin
+      writeln('hi');
+      a := a + 1;
+      continue;
+      writeln('You are not supposed to see this!');
+    end;
   end;
 
   while (a > 8) do
@@ -23,6 +30,7 @@ begin
       a := a - 1
     else
       b := false;
+    break;
   end;
 
   writeln('value of a: ', a);

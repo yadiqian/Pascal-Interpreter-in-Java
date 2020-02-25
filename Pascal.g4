@@ -121,7 +121,20 @@ conditionClause:
   | BEGIN statements END #blockClause
   ;
 
-whileLoop: WHILE '('? b=bool_logic ')'? DO c=conditionClause;
+loopBlock:
+  conditionClause #clauseLoopBlock
+  | BEGIN loopStmts END #stmtLoopBlock
+  ;
+
+loopStmts: loopStmt*;
+
+loopStmt: 
+  statement #stmtLoop
+  | BREAK ';' #breakLoop
+  | CONTINUE ';' #continueLoop
+  ;
+
+whileLoop: WHILE '('? b=bool_logic ')'? DO loopBlock;
 
 caseExpr: CASE '(' caseId ')' OF caseStmt* ELSE caseElse END;
 
@@ -169,6 +182,8 @@ OF: O F;
 READLN: R E A D L N;
 WHILE: W H I L E;
 DO: D O;
+BREAK: B R E A K;
+CONTINUE: C O N T I N U E;
 ID: [A-Za-z_][A-Za-z0-9_]*;
 STRING: '\'' ('\'\'' | ~ ('\''))* '\'';
 INT: [0-9]+ ;

@@ -1,5 +1,6 @@
 import java.util.HashMap;
 import java.util.Scanner;
+import java.util.Stack;
 
 public class MyVisitor extends PascalBaseVisitor<Object> {
 
@@ -425,11 +426,53 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   }
 
   @Override
+  public Object visitClauseLoopBlock(PascalParser.ClauseLoopBlockContext ctx) {
+    this.visit(ctx.conditionClause());
+    return true;
+  }
+
+  @Override
+  public Object visitStmtLoopBlock(PascalParser.StmtLoopBlockContext ctx) {
+    return Boolean.valueOf(this.visit(ctx.loopStmts()).toString());
+  }
+
+  public Object visitLoopStmts(PascalParser.LoopStmtsContext ctx) {
+    for (PascalParser.LoopStmtContext stmt : ctx.loopStmt()) {
+      Integer action = Integer.valueOf(this.visit(stmt).toString());
+      if (action == 0)
+        continue;
+      if (action == 1)
+        return false;
+      if (action == 2)
+        return true;
+    }
+    return true;
+  }
+
+  @Override
+  public Object visitStmtLoop(PascalParser.StmtLoopContext ctx) {
+    this.visit(ctx.statement());
+    return 0;
+  }
+
+  @Override
+  public Object visitBreakLoop(PascalParser.BreakLoopContext ctx) {
+    return 1;
+  }
+
+  @Override
+  public Object visitContinueLoop(PascalParser.ContinueLoopContext ctx) {
+    return 2;
+  }
+
+  @Override
   public Object visitWhileLoop(PascalParser.WhileLoopContext ctx) {
     Boolean value = Boolean.valueOf(this.visit(ctx.b).toString());
 
     while (value) {
-      this.visit(ctx.c);
+      Boolean action = Boolean.valueOf(this.visit(ctx.loopBlock()).toString());
+      if (!action)
+        break;
       value = Boolean.valueOf(this.visit(ctx.b).toString());
     }
     return null;
