@@ -36,6 +36,7 @@ statement:
   | input ';' #inputStmt
   | caseExpr ';' #caseExprStmt
   | whileLoop ';' #whileStmt
+  | forLoop ';' #forStmt
   ;
 
 assignment: ID ':=' value;
@@ -136,6 +137,13 @@ loopStmt:
 
 whileLoop: WHILE '('? b=bool_logic ')'? DO loopBlock;
 
+forLoop: FOR ID ':=' start=expr order end=expr DO loopBlock;
+
+order:
+  TO #incOrder
+  | DOWNTO #decOrder
+  ;
+
 caseExpr: CASE '(' caseId ')' OF caseStmt* ELSE caseElse END;
 
 caseStmt: caseLabel ':' conditionClause ';';
@@ -182,6 +190,10 @@ OF: O F;
 READLN: R E A D L N;
 WHILE: W H I L E;
 DO: D O;
+FOR: F O R;
+TO: T O;
+DOWN: D O W N;
+DOWNTO: D O W N T O;
 BREAK: B R E A K;
 CONTINUE: C O N T I N U E;
 ID: [A-Za-z_][A-Za-z0-9_]*;

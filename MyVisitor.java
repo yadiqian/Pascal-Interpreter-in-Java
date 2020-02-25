@@ -10,6 +10,16 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   private HashMap<String, String[]> symbolTable = new HashMap<String, String[]>();
   private Scanner scan = new Scanner(System.in);
 
+  private void updateVar(String id, String value) {
+    id = id.toLowerCase();
+    if (symbolTable.containsKey(id)) {
+      String[] var = symbolTable.get(id);
+      var[1] = value;
+    } else {
+      System.err.println("Variable " + id + " not declared");
+    }
+  }
+
   @Override
   public Object visitStatements(PascalParser.StatementsContext ctx) {
     if (ctx.statements() == null)
@@ -49,6 +59,11 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   }
 
   @Override
+  public Object visitForStmt(PascalParser.ForStmtContext ctx) {
+    return this.visit(ctx.forLoop());
+  }
+
+  @Override
   public Object visitDeclaration(PascalParser.DeclarationContext ctx) {
     String[] names = ctx.varName().getText().split(",");
     String type = ctx.varType().getText().toLowerCase();
@@ -66,20 +81,15 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
       String[] value = new String[] { type, defaultVal };
       symbolTable.put(name, value);
     }
-    return visitChildren(ctx);
+    return null;
   }
 
   @Override
   public Object visitAssignment(PascalParser.AssignmentContext ctx) {
-    String id = ctx.ID().getText().toLowerCase();
+    String id = ctx.ID().getText();
+    updateVar(id, this.visit(ctx.value()).toString());
 
-    if (symbolTable.containsKey(id)) {
-      String[] value = symbolTable.get(id);
-      value[1] = this.visit(ctx.value()).toString();
-    } else {
-      System.err.println("Variable " + ctx.ID().getText() + " not declared");
-    }
-    return visitChildren(ctx);
+    return null;
   }
 
   @Override
@@ -476,6 +486,45 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
       value = Boolean.valueOf(this.visit(ctx.b).toString());
     }
     return null;
+  }
+
+  @Override
+  public Object visitForLoop(PascalParser.ForLoopContext ctx) {
+    String id = ctx.ID().getText();
+    Float start = Float.valueOf(this.visit(ctx.start).toString());
+    Float end = Float.valueOf(this.visit(ctx.end).toString());
+    Integer s = Math.round(start);
+    Integer e = Math.round(end);
+    updateVar(id, Double.valueOf(s).toString());
+
+    Boolean increasing = Boolean.valueOf(this.visit(ctx.order()).toString());
+
+    if (increasing) {
+      for (int i = s; i <= e; i++) {
+        Boolean action = Boolean.valueOf(this.visit(ctx.loopBlock()).toString());
+        if (!action)
+          break;
+        updateVar(id, Double.toString(i + 1));
+      }
+    } else {
+      for (int i = s; i >= e; i--) {
+        Boolean action = Boolean.valueOf(this.visit(ctx.loopBlock()).toString());
+        if (!action)
+          break;
+        updateVar(id, Double.toString(i - 1));
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public Object visitIncOrder(PascalParser.IncOrderContext ctx) {
+    return true;
+  }
+
+  @Override
+  public Object visitDecOrder(PascalParser.DecOrderContext ctx) {
+    return false;
   }
 
   @Override
