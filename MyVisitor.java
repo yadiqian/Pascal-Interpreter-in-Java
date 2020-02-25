@@ -11,7 +11,8 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
 
   @Override
   public Object visitStatements(PascalParser.StatementsContext ctx) {
-    if (ctx.statements() == null) return null;
+    if (ctx.statements() == null)
+      return null;
     this.visit(ctx.statement());
     return this.visit(ctx.statements());
   }
@@ -39,6 +40,11 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   @Override
   public Object visitCaseExprStmt(PascalParser.CaseExprStmtContext ctx) {
     return this.visit(ctx.caseExpr());
+  }
+
+  @Override
+  public Object visitWhileStmt(PascalParser.WhileStmtContext ctx) {
+    return this.visit(ctx.whileLoop());
   }
 
   @Override
@@ -409,8 +415,24 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   }
 
   @Override
+  public Object visitInputClause(PascalParser.InputClauseContext ctx) {
+    return this.visit(ctx.input());
+  }
+
+  @Override
   public Object visitBlockClause(PascalParser.BlockClauseContext ctx) {
     return this.visit(ctx.statements());
+  }
+
+  @Override
+  public Object visitWhileLoop(PascalParser.WhileLoopContext ctx) {
+    Boolean value = Boolean.valueOf(this.visit(ctx.b).toString());
+
+    while (value) {
+      this.visit(ctx.c);
+      value = Boolean.valueOf(this.visit(ctx.b).toString());
+    }
+    return null;
   }
 
   @Override

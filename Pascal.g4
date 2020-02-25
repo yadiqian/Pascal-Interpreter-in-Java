@@ -35,6 +35,7 @@ statement:
   | printStatement ';' #printStmt
   | input ';' #inputStmt
   | caseExpr ';' #caseExprStmt
+  | whileLoop ';' #whileStmt
   ;
 
 assignment: ID ':=' value;
@@ -116,8 +117,11 @@ conditionClause:
   assignment #assignmentClause
   | condition #condClause
   | printStatement #printClause
+  | input #inputClause
   | BEGIN statements END #blockClause
   ;
+
+whileLoop: WHILE '('? b=bool_logic ')'? DO c=conditionClause;
 
 caseExpr: CASE '(' caseId ')' OF caseStmt* ELSE caseElse END;
 
