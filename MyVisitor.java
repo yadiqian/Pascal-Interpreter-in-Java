@@ -7,8 +7,16 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   public static final String REAL_TYPE = "real";
   public static final String BOOL_TYPE = "boolean";
 
-  private HashMap<String, String[]> symbolTable = new HashMap<String, String[]>();
-  private Scanner scan = new Scanner(System.in);
+  private HashMap<String, String[]> symbolTable;
+  private Scanner scan;
+  private Stack<Scope> scopes;
+
+  public MyVisitor() {
+    symbolTable = new HashMap<String, String[]>();
+    scan = new Scanner(System.in);
+    scopes = new Stack<Scope>();
+    scopes.push(new Scope(null));
+  }
 
   private void updateVar(String id, String value) {
     id = id.toLowerCase();
@@ -19,6 +27,12 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
       System.err.println("Variable " + id + " not declared");
     }
   }
+
+  // private boolean varInScope(String varName) {
+  //   Scope scope = scopes.peek();
+  //   if (scope.inScope(varName)) return true;
+  //   return false;
+  // }
 
   @Override
   public Object visitStatements(PascalParser.StatementsContext ctx) {
@@ -85,7 +99,7 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   }
 
   @Override
-  public Object visitAssignment(PascalParser.AssignmentContext ctx) {
+  public Object visitValueAssignment(PascalParser.ValueAssignmentContext ctx) {
     String id = ctx.ID().getText();
     updateVar(id, this.visit(ctx.value()).toString());
 

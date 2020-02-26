@@ -4,7 +4,7 @@ program: programHeading programBlock '.';
 
 programHeading: PROGRAM ID ';';
 
-programBlock: declarationBlock BEGIN block END;
+programBlock: declarationBlock functionDec BEGIN block END;
 
 declarationBlock: 
 // nothing
@@ -18,6 +18,12 @@ varName: ID (',' ID)*;
 varType:
   REAL
   | BOOLEAN
+  ;
+
+functionDec:
+  // nothing
+  | function functionDec
+  | procedure functionDec
   ;
 
 block:
@@ -37,9 +43,13 @@ statement:
   | caseExpr ';' #caseExprStmt
   | whileLoop ';' #whileStmt
   | forLoop ';' #forStmt
+  | functionCall ';' #functionCallStmt
   ;
 
-assignment: ID ':=' value;
+assignment: 
+  ID ':=' value #valueAssignment
+  | ID ':=' functionCall #functionAssignment
+  ;
 
 value returns[String s]:
   ID  #idValue
@@ -164,6 +174,29 @@ inputIDs:
   | ID ',' inputIDs
   ;
 
+function: functionHeader ';' body ';';
+
+functionHeader: FUNCTION ID '(' param? ')' ':' varType;
+
+body: declarationBlock BEGIN block END;
+
+param: declaration (';' declaration)*;
+
+functionCall: ID '(' paramCall? ')';
+
+paramCall: value (',' value)*;
+
+procedure: procedureHeader ';' body ';';
+
+procedureHeader: PROCEDURE ID ('(' paramList ')')?;
+
+paramList: 
+  param (';' varDeclare)?
+  | varDeclare (';' param)?
+  ;
+
+varDeclare: VAR declaration (';' VAR declaration)*;
+
 PROGRAM: P R O G R A M;
 BEGIN: B E G I N;
 END: E N D;
@@ -196,6 +229,8 @@ DOWN: D O W N;
 DOWNTO: D O W N T O;
 BREAK: B R E A K;
 CONTINUE: C O N T I N U E;
+FUNCTION: F U N C T I O N;
+PROCEDURE: P R O C E D U R E;
 ID: [A-Za-z_][A-Za-z0-9_]*;
 STRING: '\'' ('\'\'' | ~ ('\''))* '\'';
 INT: [0-9]+ ;
