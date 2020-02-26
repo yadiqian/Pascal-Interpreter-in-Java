@@ -7,32 +7,28 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   public static final String REAL_TYPE = "real";
   public static final String BOOL_TYPE = "boolean";
 
-  private HashMap<String, String[]> symbolTable;
   private Scanner scan;
   private Stack<Scope> scopes;
+  private HashMap<String, HashMap<String, PascalParser.FunctionContext>> functions;
 
   public MyVisitor() {
-    symbolTable = new HashMap<String, String[]>();
     scan = new Scanner(System.in);
     scopes = new Stack<Scope>();
     scopes.push(new Scope(null));
+    functions = new HashMap<String, HashMap<String, PascalParser.FunctionContext>>();
   }
 
   private void updateVar(String id, String value) {
     id = id.toLowerCase();
-    if (symbolTable.containsKey(id)) {
-      String[] var = symbolTable.get(id);
-      var[1] = value;
+
+    Scope scope = scopes.peek();
+    int inScope = scope.inScope(id, scopes.size() - 1);
+    if (inScope != -1) {
+      scopes.get(inScope).get(id)[1] = value;
     } else {
-      System.err.println("Variable " + id + " not declared");
+      System.out.println("Varialbe " + id + " not in scope");
     }
   }
-
-  // private boolean varInScope(String varName) {
-  //   Scope scope = scopes.peek();
-  //   if (scope.inScope(varName)) return true;
-  //   return false;
-  // }
 
   @Override
   public Object visitStatements(PascalParser.StatementsContext ctx) {
@@ -93,7 +89,8 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
         System.err.println("Type " + type + " is not supported");
 
       String[] value = new String[] { type, defaultVal };
-      symbolTable.put(name, value);
+      Scope scope = scopes.peek();
+      scope.put(name, value);
     }
     return null;
   }
@@ -101,7 +98,8 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   @Override
   public Object visitValueAssignment(PascalParser.ValueAssignmentContext ctx) {
     String id = ctx.ID().getText();
-    updateVar(id, this.visit(ctx.value()).toString());
+    String value = this.visit(ctx.value()).toString();
+    updateVar(id, value);
 
     return null;
   }
@@ -110,11 +108,15 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   public String visitIdValue(PascalParser.IdValueContext ctx) {
     String name = ctx.ID().getText().toLowerCase();
     String value = "";
-    if (symbolTable.containsKey(name)) {
-      String val = symbolTable.get(name)[1].toString();
-      value = symbolTable.get(name)[0].equals(BOOL_TYPE) ? val.toUpperCase() : val;
+
+    Scope scope = scopes.peek();
+    int inScope = scope.inScope(name, scopes.size() - 1);
+    if (inScope != -1) {
+      Scope cur = scopes.get(inScope);
+      String val = cur.get(name)[1].toString();
+      value = cur.get(name)[0].equals(BOOL_TYPE) ? val.toUpperCase() : val;
     } else {
-      System.err.println("Variable " + ctx.ID().getText() + " not declared");
+      System.err.println("Variable " + ctx.ID().getText() + " not in scope");
     }
     return value;
   }
@@ -315,10 +317,14 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   public String visitValID(PascalParser.ValIDContext ctx) {
     String name = ctx.ID().getText().toLowerCase();
     String value = "";
-    if (symbolTable.containsKey(name)) {
-      value = symbolTable.get(name)[1];
+
+    Scope scope = scopes.peek();
+    int inScope = scope.inScope(name, scopes.size() - 1);
+    if (inScope != -1) {
+      Scope cur = scopes.get(inScope);
+      value = cur.get(name)[1];
     } else {
-      System.err.println("Variable " + ctx.ID().getText() + " not declared");
+      System.err.println("Variable " + ctx.ID().getText() + " not in scope");
     }
     return value;
   }
@@ -563,15 +569,20 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   public String visitCaseId(PascalParser.CaseIdContext ctx) {
     String id = ctx.ID().getText().toLowerCase();
     String val = "";
-    if (symbolTable.containsKey(id)) {
-      String value = symbolTable.get(id)[1];
-      if (symbolTable.get(id)[0].equals(REAL_TYPE)) {
+
+    Scope scope = scopes.peek();
+    int inScope = scope.inScope(id, scopes.size() - 1);
+    if (inScope != -1) {
+      Scope cur = scopes.get(inScope);
+      String value = cur.get(id)[1];
+      if (cur.get(id)[0].equals(REAL_TYPE)) {
         value = Double.toString(Math.round(Double.parseDouble(value)));
       }
       val = value.toLowerCase();
     } else {
-      System.err.println("Variable " + ctx.ID().getText() + " not declared");
+      System.err.println("Variable " + ctx.ID().getText() + " not in scope");
     }
+
     return val;
   }
 
@@ -593,13 +604,59 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
       String value = scan.nextLine();
       String id = s.toLowerCase();
 
-      if (symbolTable.containsKey(id)) {
-        symbolTable.get(id)[1] = value;
+      Scope scope = scopes.peek();
+      int inScope = scope.inScope(id, scopes.size() - 1);
+      if (inScope != -1) {
+        Scope cur = scopes.get(inScope);
+        cur.get(id)[1] = value;
       } else {
-        System.err.println("Variable " + s + " not declared");
+        System.err.println("Variable " + s + " not in scope");
+      }
+
+    }
+    return null;
+  }
+
+  @Override
+  public Object visitFunction(PascalParser.FunctionContext ctx) {
+    String name = ctx.ID().getText();
+    String param = "";
+
+    if (ctx.param() != null) {
+      String params = ctx.param().getText();
+      String[] expr = params.split(";");
+      for (String s : expr) {
+        if (!param.isEmpty())
+          param += ",";
+        String[] valType = s.split(":");
+        int num = valType[0].split(",").length;
+        for (int j = 0; j < num; j++) {
+          if (!param.isEmpty())
+            param += ",";
+          param += valType[1].toLowerCase();
+        }
       }
     }
-    return visitChildren(ctx);
+
+    if (!functions.containsKey(name) || !functions.get(name).containsKey(param)) {
+      HashMap<String, PascalParser.FunctionContext> map = new HashMap<>();
+      map.put(param, ctx);
+      functions.put(name, map);
+    } else {
+      // create new scope execute function
+      scopes.push(new Scope(scopes.peek()));
+    }
+    return null;
+  }
+
+  @Override
+  public Object visitExitScope(PascalParser.ExitScopeContext ctx) {
+    return scopes.pop();
+  }
+
+  @Override
+  public Object visitBody(PascalParser.BodyContext ctx) {
+    return null;
   }
 
 }

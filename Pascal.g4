@@ -174,11 +174,11 @@ inputIDs:
   | ID ',' inputIDs
   ;
 
-function: functionHeader ';' body ';';
+function: FUNCTION ID ('(' param? ')')? ':' varType ';' body ';';
 
-functionHeader: FUNCTION ID '(' param? ')' ':' varType;
+body: declarationBlock BEGIN block exitScope;
 
-body: declarationBlock BEGIN block END;
+exitScope: END;
 
 param: declaration (';' declaration)*;
 
