@@ -2,6 +2,7 @@ import java.util.HashMap;
 import java.util.Scanner;
 import java.util.Stack;
 import javafx.util.Pair;
+import java.util.ArrayList;
 
 public class MyVisitor extends PascalBaseVisitor<Object> {
 
@@ -11,12 +12,14 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   private Scanner scan;
   private Stack<Scope> scopes;
   private HashMap<String, HashMap<String, Pair<String, PascalParser.FunctionContext>>> functions;
+  private HashMap<String, HashMap<String, Pair<String, PascalParser.ProcedureContext>>> procedures;
 
   public MyVisitor() {
     scan = new Scanner(System.in);
     scopes = new Stack<Scope>();
     scopes.push(new Scope(null)); // create global scope
     functions = new HashMap<String, HashMap<String, Pair<String, PascalParser.FunctionContext>>>();
+    procedures = new HashMap<String, HashMap<String, Pair<String, PascalParser.ProcedureContext>>>();
   }
 
   private void updateVar(String id, String value) {
@@ -681,6 +684,7 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
 
   @Override
   public Object visitFunctionCall(PascalParser.FunctionCallContext ctx) {
+    // Get argument types
     String id = ctx.ID().getText().toLowerCase();
     String param = "";
     if (ctx.paramCall() != null) {
@@ -696,6 +700,8 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
         }
       }
     }
+
+    String ret = "";
 
     if (functions.containsKey(id)) {
       if (functions.get(id).containsKey(param)) {
@@ -717,23 +723,62 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
         }
 
         this.visit(functionCtx);
-      } else {
-        System.out.println("Invalid function arguments");
+
+        if (scope.containsKey(id) && !scope.get(id)[1].isEmpty()) {
+          ret = scope.get(id)[1];
+        } else {
+          System.out.println("Functinon has no return value");
+        }
+
+        // Function ends, destroy function scope
+        scopes.pop();
       }
-    } else {
-      System.out.println("Function not declared");
-    }
+    } else if (procedures.containsKey(id)) {
+      if (procedures.get(id).containsKey(param)) {
+        // Create new scope
+      scopes.push(new Scope(scopes.peek()));
 
-    String ret = "";
-    Scope scope = scopes.peek();
-    if (scope.containsKey(id) && !scope.get(id)[1].isEmpty()) {
-      ret = scope.get(id)[1];
-    } else {
-      System.out.println("Functinon has no return value");
-    }
+      Scope scope = scopes.peek();
+      String s0 = procedures.get(id).get(param).getKey();
+      String[] paramName = s0.split(",");
+      String s1 = this.visit(ctx.paramCall()).toString();
+      String[] paramValue = s1.split(",");
 
-    // Function ends, destroy function scope
-    scopes.pop();
+      PascalParser.ProcedureContext procedureCtx = procedures.get(id).get(param).getValue();
+
+      ArrayList<String> ref = new ArrayList<String>();
+      // Add parameter values to the new scope
+      this.visit(procedureCtx.paramList());
+      for (int i = 0; i < paramName.length; i++) {
+        if (!scope.containsKey(paramName[i])) {
+          paramName[i] = paramName[i].substring(3);
+          ref.add(paramName[i]);
+        }
+        updateVar(paramName[i], paramValue[i]);
+      }
+
+      this.visit(procedureCtx);
+
+      for (int i = 0; i < ref.size(); i++) {
+        String value = scope.get(ref.get(i))[1];
+        ref.set(i, value);
+      }
+
+      // Function ends, destroy function scope
+      scopes.pop();
+
+      if (ctx.paramCall() != null) {
+        String[] callVars = ctx.paramCall().getText().split(",");
+        for (int i = callVars.length - 1, j = ref.size() - 1; j >= 0; i--, j--) {
+          Scope cur = scopes.peek();
+          cur.get(callVars[i])[1] = ref.get(j);
+        }
+      }
+      
+      } 
+    } else {
+        System.out.println("Function or procedure not declared");
+      }
 
     return ret;
   }
@@ -755,6 +800,44 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
       v += this.visit(value).toString();
     }
     return v;
+  }
+
+  @Override
+  public Object visitProcedure(PascalParser.ProcedureContext ctx) {
+    String name = ctx.ID().getText().toLowerCase();
+    String param = "";
+    String valName = "";
+
+    if (ctx.paramList() != null) {
+      String params = ctx.paramList().getText();
+      String[] expr = params.split(";");
+      for (String s : expr) {
+        if (!param.isEmpty())
+          param += ",";
+        if (!valName.isEmpty())
+          valName += ",";
+        String[] valType = s.split(":");
+        valName += valType[0];
+        int num = valType[0].split(",").length;
+        for (int j = 0; j < num; j++) {
+          if (!param.isEmpty() && j != 0)
+            param += ",";
+          param += valType[1].toLowerCase();
+        }
+      }
+    }
+
+    if (!procedures.containsKey(name) || !procedures.get(name).containsKey(param)) {
+      Pair<String, PascalParser.ProcedureContext> p = new Pair<>(valName, ctx);
+      HashMap<String, Pair<String, PascalParser.ProcedureContext>> map = new HashMap<>();
+      map.put(param, p);
+      procedures.put(name, map);
+    } else {
+      // Execute function
+      this.visit(ctx.body());
+    }
+
+    return null;
   }
 
 }

@@ -1,24 +1,29 @@
 program test16;
 var
   a, b, c, min: real;
+  test: boolean;
 
-procedure findMin(x, y, z: real; var m: real); 
+procedure findMin(x, y, z: real; var m: real; var n: boolean); 
 (* Finds the minimum of the 3 values *)
 
 begin
   if x < y then
-      m:= x
-   else
-      m:= y;
-   
-   if z < m then
-      m:= z;
+    m:= x
+  else
+    m:= y;
+  
+  if z < m then
+    m:= z;
+
+  n := true;
 end;
 
 begin
-  writeln('Enter three numbers:');
-  readln(a, b, c);
-  findMin(a, b, c, min); (* Procedure call *)
+  a := 100;
+  b := 430;
+  c := -11;
+  findMin(a, b, c, min, test); (* Procedure call *)
    
-  writeln('Minimum: ', min);
+  writeln('Minimum:', min);
+  writeln(test);
 end.

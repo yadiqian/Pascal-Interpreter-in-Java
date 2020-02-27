@@ -183,9 +183,7 @@ functionCall: ID '(' paramCall? ')';
 
 paramCall: value (',' value)*;
 
-procedure: procedureHeader ';' body ';';
-
-procedureHeader: PROCEDURE ID ('(' paramList ')')?;
+procedure: PROCEDURE ID ('(' paramList ')')? ';' body ';';
 
 paramList: 
   param (';' varDeclare)?
