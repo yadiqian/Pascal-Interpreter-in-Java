@@ -181,7 +181,7 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   @Override
   public Object visitValuePrintStr(PascalParser.ValuePrintStrContext ctx) {
     Object obj = this.visit(ctx.value());
-    if (!obj.toString().toLowerCase().equals("true") && !obj.toString().toLowerCase().equals("false")) {
+    if (!obj.toString().toLowerCase().equals("true") && !obj.toString().toLowerCase().equals("false") && !obj.toString().isEmpty()) {
       Float d = Float.valueOf(obj.toString());
       Integer i = Math.round(d);
       if (i - d == 0) return i.toString();

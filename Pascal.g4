@@ -69,7 +69,7 @@ printStr:
   | #nothingPrintStr
   ;
 
-expr returns[Double d]:
+expr:
   EXP '(' e=expr ')' #expExpr
   | LN '(' e=expr ')' #lnExpr
   | COS '(' e=expr ')' #cosExpr
@@ -97,7 +97,7 @@ expr returns[Double d]:
 
 valID: ID;
 
-bool_op returns[boolean b]:
+bool_op:
   '(' e=bool_op ')' #parBool_op
   | NOT e=bool_op #notBool_op
   | el=bool_op AND er=bool_op #andBool_op
@@ -110,7 +110,7 @@ bool_op returns[boolean b]:
 
 condition: IF '('? b=bool_logic ')'? THEN c1=conditionClause (ELSE c2=conditionClause)?;
 
-bool_logic returns [boolean b]:
+bool_logic:
   el=expression '=' er=expression #equalBool_logic
   | el=expression '>' er=expression #greaterBool_logic
   | el=expression '<' er=expression #smallerBool_logic
@@ -119,7 +119,7 @@ bool_logic returns [boolean b]:
   | bool_op #bool_opBool_logic
   ;
 
-expression returns [String s]: 
+expression: 
   valID #idExpression
   | expr #exprExpression
   | bool_op #bool_opExpression
@@ -161,9 +161,9 @@ caseStmt: caseLabel ':' conditionClause ';';
 
 caseElse: BEGIN? statements (END ';')?;
 
-caseId returns [String s]: ID;
+caseId: ID;
 
-caseLabel returns [String s]:
+caseLabel:
   e=expr #exprCaseLabel
   | b=bool_op #boolCaseLabel
   ;
