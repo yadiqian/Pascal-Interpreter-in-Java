@@ -1,4 +1,4 @@
-progRam test7;
+progRam test9;
 (* Test boolean operations with variables. *)
 
 var

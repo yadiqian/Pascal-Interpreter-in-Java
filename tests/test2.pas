@@ -19,7 +19,7 @@ end.
 (*
 Expected Output:
 
-8.55500000000000E+000                                               
+8.555                                              
 FALSE                                                                
 TRUE
 

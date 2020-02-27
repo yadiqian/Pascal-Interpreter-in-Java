@@ -161,7 +161,7 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
 
   @Override
   public Object visitMulPrintStrs(PascalParser.MulPrintStrsContext ctx) {
-    String result = this.visit(ctx.pl).toString() + " " + this.visit(ctx.pr).toString();
+    String result = this.visit(ctx.pl).toString() + this.visit(ctx.pr).toString();
     return result;
   }
 
@@ -181,6 +181,11 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   @Override
   public Object visitValuePrintStr(PascalParser.ValuePrintStrContext ctx) {
     Object obj = this.visit(ctx.value());
+    if (!obj.toString().toLowerCase().equals("true") && !obj.toString().toLowerCase().equals("false")) {
+      Float d = Float.valueOf(obj.toString());
+      Integer i = Math.round(d);
+      if (i - d == 0) return i.toString();
+    }
     return obj;
   }
 
@@ -430,6 +435,20 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   }
 
   @Override
+  public Object visitGreaterEqualBool_logic(PascalParser.GreaterEqualBool_logicContext ctx) {
+    Object left = this.visit(ctx.el);
+    Object right = this.visit(ctx.er);
+    return Double.valueOf((String) left) >= Double.valueOf((String) right);
+  }
+
+  @Override
+  public Object visitSmallerEqualBool_logic(PascalParser.SmallerEqualBool_logicContext ctx) {
+    Object left = this.visit(ctx.el);
+    Object right = this.visit(ctx.er);
+    return Double.valueOf((String) left) <= Double.valueOf((String) right);
+  }
+
+  @Override
   public Boolean visitBool_opBool_logic(PascalParser.Bool_opBool_logicContext ctx) {
     Object obj = this.visit(ctx.bool_op());
     return (Boolean) obj;
@@ -544,14 +563,16 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
         Boolean action = Boolean.valueOf(this.visit(ctx.loopBlock()).toString());
         if (!action)
           break;
-        updateVar(id, Double.toString(i + 1));
+        if (i != e)
+          updateVar(id, Double.toString(i + 1));
       }
     } else {
       for (int i = s; i >= e; i--) {
         Boolean action = Boolean.valueOf(this.visit(ctx.loopBlock()).toString());
         if (!action)
           break;
-        updateVar(id, Double.toString(i - 1));
+        if (i != e)
+          updateVar(id, Double.toString(i - 1));
       }
     }
     return null;
@@ -662,11 +683,13 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
       }
     }
 
-    if (!functions.containsKey(name) || !functions.get(name).containsKey(param)) {
+    String id = name + param;
+
+    if (!functions.containsKey(id) || !functions.get(id).containsKey(param)) {
       Pair<String, PascalParser.FunctionContext> p = new Pair<>(valName, ctx);
       HashMap<String, Pair<String, PascalParser.FunctionContext>> map = new HashMap<>();
       map.put(param, p);
-      functions.put(name, map);
+      functions.put(id, map);
     } else {
       // Set return value
       String type = ctx.varType().getText();
@@ -702,23 +725,29 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
     }
 
     String ret = "";
+    String name = id + param;
 
-    if (functions.containsKey(id)) {
-      if (functions.get(id).containsKey(param)) {
+    if (functions.containsKey(name)) {
+      if (functions.get(name).containsKey(param)) {
         // Create new scope
         scopes.push(new Scope(scopes.peek()));
 
         Scope scope = scopes.peek();
-        String s0 = functions.get(id).get(param).getKey();
+        String s0 = functions.get(name).get(param).getKey();
         String[] paramName = s0.split(",");
-        String s1 = this.visit(ctx.paramCall()).toString();
+        String s1 = "";
+        if (ctx.paramCall() != null)
+          s1 = this.visit(ctx.paramCall()).toString();
         String[] paramValue = s1.split(",");
 
-        PascalParser.FunctionContext functionCtx = functions.get(id).get(param).getValue();
+        PascalParser.FunctionContext functionCtx = functions.get(name).get(param).getValue();
 
         // Add parameter values to the new scope
-        this.visit(functionCtx.param());
+        if (functionCtx.param() != null)
+          this.visit(functionCtx.param());
         for (int i = 0; i < paramName.length; i++) {
+          if (paramName[i].isEmpty())
+            continue;
           updateVar(paramName[i], paramValue[i]);
         }
 
@@ -733,52 +762,57 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
         // Function ends, destroy function scope
         scopes.pop();
       }
-    } else if (procedures.containsKey(id)) {
-      if (procedures.get(id).containsKey(param)) {
+    } else if (procedures.containsKey(name)) {
+      if (procedures.get(name).containsKey(param)) {
         // Create new scope
-      scopes.push(new Scope(scopes.peek()));
+        scopes.push(new Scope(scopes.peek()));
 
-      Scope scope = scopes.peek();
-      String s0 = procedures.get(id).get(param).getKey();
-      String[] paramName = s0.split(",");
-      String s1 = this.visit(ctx.paramCall()).toString();
-      String[] paramValue = s1.split(",");
+        Scope scope = scopes.peek();
+        String s0 = procedures.get(name).get(param).getKey();
+        String[] paramName = s0.split(",");
+        String s1 = "";
+        if (ctx.paramCall() != null)
+          s1 = this.visit(ctx.paramCall()).toString();
+        String[] paramValue = s1.split(",");
 
-      PascalParser.ProcedureContext procedureCtx = procedures.get(id).get(param).getValue();
+        PascalParser.ProcedureContext procedureCtx = procedures.get(name).get(param).getValue();
 
-      ArrayList<String> ref = new ArrayList<String>();
-      // Add parameter values to the new scope
-      this.visit(procedureCtx.paramList());
-      for (int i = 0; i < paramName.length; i++) {
-        if (!scope.containsKey(paramName[i])) {
-          paramName[i] = paramName[i].substring(3);
-          ref.add(paramName[i]);
+        ArrayList<String> ref = new ArrayList<String>();
+        // Add parameter values to the new scope
+        if (procedureCtx.paramList() != null)
+          this.visit(procedureCtx.paramList());
+        for (int i = 0; i < paramName.length; i++) {
+          if (paramName[i].isEmpty())
+            continue;
+          if (!scope.containsKey(paramName[i])) {
+            paramName[i] = paramName[i].substring(3);
+            ref.add(paramName[i]);
+          }
+          updateVar(paramName[i], paramValue[i]);
         }
-        updateVar(paramName[i], paramValue[i]);
-      }
 
-      this.visit(procedureCtx);
+        this.visit(procedureCtx);
 
-      for (int i = 0; i < ref.size(); i++) {
-        String value = scope.get(ref.get(i))[1];
-        ref.set(i, value);
-      }
-
-      // Function ends, destroy function scope
-      scopes.pop();
-
-      if (ctx.paramCall() != null) {
-        String[] callVars = ctx.paramCall().getText().split(",");
-        for (int i = callVars.length - 1, j = ref.size() - 1; j >= 0; i--, j--) {
-          Scope cur = scopes.peek();
-          cur.get(callVars[i])[1] = ref.get(j);
+        for (int i = 0; i < ref.size(); i++) {
+          String value = scope.get(ref.get(i))[1];
+          ref.set(i, value);
         }
+
+        // Function ends, destroy function scope
+        scopes.pop();
+
+        if (ctx.paramCall() != null) {
+          String[] callVars = ctx.paramCall().getText().split(",");
+          for (int i = callVars.length - 1, j = ref.size() - 1; j >= 0; i--, j--) {
+            Scope cur = scopes.peek();
+            cur.get(callVars[i])[1] = ref.get(j);
+          }
+        }
+
       }
-      
-      } 
     } else {
-        System.out.println("Function or procedure not declared");
-      }
+      System.out.println("Function or procedure not declared");
+    }
 
     return ret;
   }
@@ -826,6 +860,8 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
         }
       }
     }
+
+    name = name + param;
 
     if (!procedures.containsKey(name) || !procedures.get(name).containsKey(param)) {
       Pair<String, PascalParser.ProcedureContext> p = new Pair<>(valName, ctx);

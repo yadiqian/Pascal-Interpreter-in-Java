@@ -51,18 +51,18 @@ assignment: ID ':=' value;
 value:
   ID  #idValue
   | bool_op  #boolValue
-  | expr  #exprValue
   | functionCall #functionValue
+  | expr  #exprValue
   ;
 
 printStatement: WRITELN '(' printStrs ')';
 
-printStrs returns[String s]:
+printStrs:
   printStr #singlePrintStrs 
   | pl=printStr ',' pr=printStrs #mulPrintStrs
   ;
 
-printStr returns[String s]:
+printStr:
   STRING #strPrintStr
   | value #valuePrintStr
   | bool_logic #boolLogicPrintStr
@@ -114,6 +114,8 @@ bool_logic returns [boolean b]:
   el=expression '=' er=expression #equalBool_logic
   | el=expression '>' er=expression #greaterBool_logic
   | el=expression '<' er=expression #smallerBool_logic
+  | el=expression '>=' er=expression #greaterEqualBool_logic
+  | el=expression '<=' er=expression #smallerEqualBool_logic
   | bool_op #bool_opBool_logic
   ;
 

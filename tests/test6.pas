@@ -10,7 +10,7 @@ BEGIN
   writeln(a);
   writeln ('Input 3 real numbers: ');
   readln(b, c, d);
-  writeln(b, c, d);
+  writeln(b, ' ', c, ' ', d);
 eND.
 
 (*

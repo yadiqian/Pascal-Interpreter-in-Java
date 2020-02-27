@@ -29,8 +29,8 @@ end.
 (*
 Expected output:
 
-This is true                                                         
-5.00000000000000E+000                                               
-1.35335283236613E-001
+This is true
+5
+0.1353352832366127
 
 *)

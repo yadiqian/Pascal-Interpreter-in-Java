@@ -1,4 +1,5 @@
 program test16;
+(* Test procedure *)
 var
   a, b, c, min: real;
   test: boolean;
@@ -24,6 +25,14 @@ begin
   c := -11;
   findMin(a, b, c, min, test); (* Procedure call *)
    
-  writeln('Minimum:', min);
+  writeln('Minimum: ', min);
   writeln(test);
 end.
+
+(*
+Expected output:
+
+Minimum: -11
+TRUE
+
+*)

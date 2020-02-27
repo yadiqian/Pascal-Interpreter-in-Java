@@ -1,4 +1,4 @@
-progRam test7;
+progRam test8;
 (* Test arithmetic operations with variables. *)
 
 var
@@ -22,9 +22,9 @@ eND.
 (*
 Expected output:
 
-3.00000000000000E+000                                               
--7.50000000000000E+001                                               
-2.62000000000000E+002                                               
-1.25000000000000E+001
+3
+-75
+262
+12.5
 
 *)

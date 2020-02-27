@@ -1,4 +1,5 @@
 program test13;
+(* Test while loop *)
 var
   a: real;
   b: boolean;
@@ -37,3 +38,22 @@ begin
   writeln('value of b: ', b);
 
 end.
+
+(*
+Expected output:
+
+value of a: 10                                                                                                          
+hi                                                                                                                      
+hi                                                                                                                      
+hi                                                                                                                      
+hi                                                                                                                      
+value of a: 15                                                                                                          
+value of a: 16                                                                                                          
+value of a: 17                                                                                                          
+value of a: 18                                                                                                          
+value of a: 19                                                                                                          
+value of a: 8                                                                                                           
+value of a: 7                                                                                                           
+value of b: TRUE
+
+*)
