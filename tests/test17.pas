@@ -1,8 +1,7 @@
 program fibonacci;
 var
-  ret : real;
+  ret, i : real;
 
-(*function definition *)
 function fibonacci(n:real): real;
 begin
   if n > 1 then
@@ -12,6 +11,9 @@ begin
 end;
 
 begin
-  ret := fibonacci(20);
-  writeln(ret);
+  for i := 0 to 20 do 
+  begin
+    ret := fibonacci(i);
+    writeln(i, ret);
+  end;
 end.
