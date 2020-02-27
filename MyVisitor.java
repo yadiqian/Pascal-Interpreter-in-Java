@@ -1,6 +1,7 @@
 import java.util.HashMap;
 import java.util.Scanner;
 import java.util.Stack;
+import javafx.util.Pair;
 
 public class MyVisitor extends PascalBaseVisitor<Object> {
 
@@ -9,13 +10,13 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
 
   private Scanner scan;
   private Stack<Scope> scopes;
-  private HashMap<String, HashMap<String, PascalParser.FunctionContext>> functions;
+  private HashMap<String, HashMap<String, Pair<String, PascalParser.FunctionContext>>> functions;
 
   public MyVisitor() {
     scan = new Scanner(System.in);
     scopes = new Stack<Scope>();
-    scopes.push(new Scope(null));
-    functions = new HashMap<String, HashMap<String, PascalParser.FunctionContext>>();
+    scopes.push(new Scope(null)); // create global scope
+    functions = new HashMap<String, HashMap<String, Pair<String, PascalParser.FunctionContext>>>();
   }
 
   private void updateVar(String id, String value) {
@@ -74,6 +75,11 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   }
 
   @Override
+  public Object visitFunctionCallStmt(PascalParser.FunctionCallStmtContext ctx) {
+    return this.visit(ctx.functionCall());
+  }
+
+  @Override
   public Object visitDeclaration(PascalParser.DeclarationContext ctx) {
     String[] names = ctx.varName().getText().split(",");
     String type = ctx.varType().getText().toLowerCase();
@@ -96,12 +102,17 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   }
 
   @Override
-  public Object visitValueAssignment(PascalParser.ValueAssignmentContext ctx) {
+  public Object visitAssignment(PascalParser.AssignmentContext ctx) {
     String id = ctx.ID().getText();
     String value = this.visit(ctx.value()).toString();
     updateVar(id, value);
 
     return null;
+  }
+
+  @Override
+  public Object visitFunctionValue(PascalParser.FunctionValueContext ctx) {
+    return this.visit(ctx.functionCall()).toString();
   }
 
   @Override
@@ -258,6 +269,12 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   @Override
   public Double visitIdExpr(PascalParser.IdExprContext ctx) {
     Object obj = this.visit(ctx.valID());
+    return Double.parseDouble(obj.toString());
+  }
+
+  @Override
+  public Object visitFuncExpr(PascalParser.FuncExprContext ctx) {
+    Object obj = this.visit(ctx.functionCall());
     return Double.parseDouble(obj.toString());
   }
 
@@ -619,8 +636,9 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
 
   @Override
   public Object visitFunction(PascalParser.FunctionContext ctx) {
-    String name = ctx.ID().getText();
+    String name = ctx.ID().getText().toLowerCase();
     String param = "";
+    String valName = "";
 
     if (ctx.param() != null) {
       String params = ctx.param().getText();
@@ -628,10 +646,13 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
       for (String s : expr) {
         if (!param.isEmpty())
           param += ",";
+        if (!valName.isEmpty())
+          valName += ",";
         String[] valType = s.split(":");
+        valName += valType[0];
         int num = valType[0].split(",").length;
         for (int j = 0; j < num; j++) {
-          if (!param.isEmpty())
+          if (!param.isEmpty() && j != 0)
             param += ",";
           param += valType[1].toLowerCase();
         }
@@ -639,24 +660,101 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
     }
 
     if (!functions.containsKey(name) || !functions.get(name).containsKey(param)) {
-      HashMap<String, PascalParser.FunctionContext> map = new HashMap<>();
-      map.put(param, ctx);
+      Pair<String, PascalParser.FunctionContext> p = new Pair<>(valName, ctx);
+      HashMap<String, Pair<String, PascalParser.FunctionContext>> map = new HashMap<>();
+      map.put(param, p);
       functions.put(name, map);
     } else {
-      // create new scope execute function
-      scopes.push(new Scope(scopes.peek()));
+      // Set return value
+      String type = ctx.varType().getText();
+      String defaultVal = "";
+
+      String[] value = new String[] { type, defaultVal };
+      Scope scope = scopes.peek();
+      scope.put(name, value);
+
+      // Execute function
+      this.visit(ctx.body());
     }
     return null;
   }
 
   @Override
-  public Object visitExitScope(PascalParser.ExitScopeContext ctx) {
-    return scopes.pop();
+  public Object visitFunctionCall(PascalParser.FunctionCallContext ctx) {
+    String id = ctx.ID().getText().toLowerCase();
+    String param = "";
+    if (ctx.paramCall() != null) {
+      String s = this.visit(ctx.paramCall()).toString();
+      String[] params = s.split(",");
+      for (String p : params) {
+        if (!param.isEmpty())
+          param += ",";
+        if (p.toLowerCase().equals("true") || p.toLowerCase().equals("false")) {
+          param += "boolean";
+        } else {
+          param += "real";
+        }
+      }
+    }
+
+    if (functions.containsKey(id)) {
+      if (functions.get(id).containsKey(param)) {
+        // Create new scope
+        scopes.push(new Scope(scopes.peek()));
+
+        Scope scope = scopes.peek();
+        String s0 = functions.get(id).get(param).getKey();
+        String[] paramName = s0.split(",");
+        String s1 = this.visit(ctx.paramCall()).toString();
+        String[] paramValue = s1.split(",");
+
+        PascalParser.FunctionContext functionCtx = functions.get(id).get(param).getValue();
+
+        // Add parameter values to the new scope
+        this.visit(functionCtx.param());
+        for (int i = 0; i < paramName.length; i++) {
+          updateVar(paramName[i], paramValue[i]);
+        }
+
+        this.visit(functionCtx);
+      } else {
+        System.out.println("Invalid function arguments");
+      }
+    } else {
+      System.out.println("Function not declared");
+    }
+
+    String ret = "";
+    Scope scope = scopes.peek();
+    if (scope.containsKey(id) && !scope.get(id)[1].isEmpty()) {
+      ret = scope.get(id)[1];
+    } else {
+      System.out.println("Functinon has no return value");
+    }
+
+    // Function ends, destroy function scope
+    scopes.pop();
+
+    return ret;
   }
 
   @Override
   public Object visitBody(PascalParser.BodyContext ctx) {
+    this.visit(ctx.declarationBlock());
+    this.visit(ctx.block());
+    Scope scope = scopes.peek();
     return null;
+  }
+
+  @Override
+  public Object visitParamCall(PascalParser.ParamCallContext ctx) {
+    String v = "";
+    for (PascalParser.ValueContext value : ctx.value()) {
+      if (!v.isEmpty())
+        v += ",";
+      v += this.visit(value).toString();
+    }
+    return v;
   }
 
 }

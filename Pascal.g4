@@ -27,7 +27,7 @@ functionDec:
   ;
 
 block:
-  | statements
+  statements
   | statements BEGIN block END ';' statements block
   ;
 
@@ -46,15 +46,13 @@ statement:
   | functionCall ';' #functionCallStmt
   ;
 
-assignment: 
-  ID ':=' value #valueAssignment
-  | ID ':=' functionCall #functionAssignment
-  ;
+assignment: ID ':=' value;
 
-value returns[String s]:
+value:
   ID  #idValue
   | bool_op  #boolValue
   | expr  #exprValue
+  | functionCall #functionValue
   ;
 
 printStatement: WRITELN '(' printStrs ')';
@@ -85,6 +83,7 @@ expr returns[Double d]:
   | DOUBLE #doubleExpr
   | INT #intExpr
   | valID #idExpr
+  | functionCall #funcExpr
   | '-' EXP '(' e=expr ')' #negExpExpr
   | '-' LN '(' e=expr ')' #negLnExpr
   | '-' COS '(' e=expr ')' #negCosExpr
@@ -96,7 +95,7 @@ expr returns[Double d]:
   | '-' valID #negIdExpr
   ;
 
-valID returns [String s]: ID;
+valID: ID;
 
 bool_op returns[boolean b]:
   '(' e=bool_op ')' #parBool_op
@@ -176,9 +175,7 @@ inputIDs:
 
 function: FUNCTION ID ('(' param? ')')? ':' varType ';' body ';';
 
-body: declarationBlock BEGIN block exitScope;
-
-exitScope: END;
+body: declarationBlock BEGIN block END;
 
 param: declaration (';' declaration)*;
 

@@ -13,6 +13,8 @@ java Main tests/test1.pas
 ```
 
 nested while loops
+supports function overloading
+supports recursion!!!
 
 - break and continue in if else within loop
 
