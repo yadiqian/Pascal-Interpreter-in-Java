@@ -133,8 +133,17 @@ conditionClause:
   | BEGIN statements END #blockClause
   ;
 
+conditionLoop: IF '('? b=bool_logic ')'? THEN c1=conditionLoopClause (ELSE c2=conditionLoopClause)?;
+
+conditionLoopClause:
+  conditionClause #conditionClauseLoop
+  | CONTINUE #continueClauseLoop
+  | BREAK #breakClauseLoop
+  | BEGIN loopStmts END #blockClauseLoop
+  ;
+
 loopBlock:
-  conditionClause #clauseLoopBlock
+  conditionLoopClause #clauseLoopBlock
   | BEGIN loopStmts END #stmtLoopBlock
   ;
 
@@ -144,6 +153,7 @@ loopStmt:
   statement #stmtLoop
   | BREAK ';' #breakLoop
   | CONTINUE ';' #continueLoop
+  | conditionLoop ';' #conditionLoopStmt
   ;
 
 whileLoop: WHILE '('? b=bool_logic ')'? DO loopBlock;

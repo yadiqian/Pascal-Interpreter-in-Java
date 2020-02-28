@@ -181,10 +181,12 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   @Override
   public Object visitValuePrintStr(PascalParser.ValuePrintStrContext ctx) {
     Object obj = this.visit(ctx.value());
-    if (!obj.toString().toLowerCase().equals("true") && !obj.toString().toLowerCase().equals("false") && !obj.toString().isEmpty()) {
+    if (!obj.toString().toLowerCase().equals("true") && !obj.toString().toLowerCase().equals("false")
+        && !obj.toString().isEmpty()) {
       Float d = Float.valueOf(obj.toString());
       Integer i = Math.round(d);
-      if (i - d == 0) return i.toString();
+      if (i - d == 0)
+        return i.toString();
     }
     return obj;
   }
@@ -415,7 +417,7 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
 
   @Override
   public Boolean visitEqualBool_logic(PascalParser.EqualBool_logicContext ctx) {
-    Object left = this.visit(ctx.er);
+    Object left = this.visit(ctx.el);
     Object right = this.visit(ctx.er);
     return left.equals(right);
   }
@@ -495,14 +497,47 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   }
 
   @Override
-  public Object visitClauseLoopBlock(PascalParser.ClauseLoopBlockContext ctx) {
+  public Object visitConditionLoop(PascalParser.ConditionLoopContext ctx) {
+    Boolean val = Boolean.valueOf(this.visit(ctx.b).toString());
+    if (val)
+      return this.visit(ctx.c1);
+    else if (ctx.c2 != null)
+      return this.visit(ctx.c2);
+    return 0;
+  }
+
+  @Override
+  public Object visitConditionClauseLoop(PascalParser.ConditionClauseLoopContext ctx) {
     this.visit(ctx.conditionClause());
-    return true;
+    return 0;
+  }
+
+  @Override
+  public Object visitContinueClauseLoop(PascalParser.ContinueClauseLoopContext ctx) {
+    return 2;
+  }
+
+  @Override
+  public Object visitBreakClauseLoop(PascalParser.BreakClauseLoopContext ctx) {
+    return 1;
+  }
+
+  @Override
+  public Object visitBlockClauseLoop(PascalParser.BlockClauseLoopContext ctx) {
+    return this.visit(ctx.loopStmts());
+  }
+
+  @Override
+  public Object visitClauseLoopBlock(PascalParser.ClauseLoopBlockContext ctx) {
+    return this.visit(ctx.conditionLoopClause());
   }
 
   @Override
   public Object visitStmtLoopBlock(PascalParser.StmtLoopBlockContext ctx) {
-    return Boolean.valueOf(this.visit(ctx.loopStmts()).toString());
+    String action = this.visit(ctx.loopStmts()).toString();
+    if (action == "1")
+      return false;
+    return true;
   }
 
   public Object visitLoopStmts(PascalParser.LoopStmtsContext ctx) {
@@ -511,11 +546,11 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
       if (action == 0)
         continue;
       if (action == 1)
-        return false;
+        return 1;
       if (action == 2)
-        return true;
+        return 2;
     }
-    return true;
+    return 0;
   }
 
   @Override
@@ -535,13 +570,25 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
   }
 
   @Override
+  public Object visitConditionLoopStmt(PascalParser.ConditionLoopStmtContext ctx) {
+    return this.visit(ctx.conditionLoop());
+  }
+
+  @Override
   public Object visitWhileLoop(PascalParser.WhileLoopContext ctx) {
     Boolean value = Boolean.valueOf(this.visit(ctx.b).toString());
 
     while (value) {
-      Boolean action = Boolean.valueOf(this.visit(ctx.loopBlock()).toString());
+      Boolean action = true;
+      String s = this.visit(ctx.loopBlock()).toString();
+      if (s.equals("1"))
+        action = false;
+      else if (!s.equals("0") && !s.equals("2"))
+        action = Boolean.valueOf(s);
+
       if (!action)
         break;
+
       value = Boolean.valueOf(this.visit(ctx.b).toString());
     }
     return null;
@@ -560,15 +607,28 @@ public class MyVisitor extends PascalBaseVisitor<Object> {
 
     if (increasing) {
       for (int i = s; i <= e; i++) {
-        Boolean action = Boolean.valueOf(this.visit(ctx.loopBlock()).toString());
+        Boolean action = true;
+        String ret = this.visit(ctx.loopBlock()).toString();
+        if (ret.equals("1"))
+          action = false;
+        else if (!ret.equals("0") && !ret.equals("2"))
+          action = Boolean.valueOf(ret);
+
         if (!action)
           break;
+
         if (i != e)
           updateVar(id, Double.toString(i + 1));
       }
     } else {
       for (int i = s; i >= e; i--) {
-        Boolean action = Boolean.valueOf(this.visit(ctx.loopBlock()).toString());
+        Boolean action = true;
+        String ret = this.visit(ctx.loopBlock()).toString();
+        if (ret.equals("1"))
+          action = false;
+        else if (!ret.equals("0") && !ret.equals("2"))
+          action = Boolean.valueOf(ret);
+
         if (!action)
           break;
         if (i != e)
