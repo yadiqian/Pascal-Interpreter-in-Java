@@ -8,8 +8,6 @@ public class Main {
     if (args.length != 1) {
       throw new Exception("Please add 1 argument.");
     }
-
-    System.out.println("parsing: " + args[0]);
     
     PascalLexer lexer = new PascalLexer(CharStreams.fromFileName(args[0]));
     PascalParser parser = new PascalParser(new CommonTokenStream(lexer));

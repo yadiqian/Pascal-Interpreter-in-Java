@@ -6,7 +6,7 @@ begin
   writeln ('Please input 2 numbers: ');
   readln (a, b);
   c := a + b;
-  writeln ('The sum of the two numbers is:', c);
+  writeln ('The sum of the two numbers is: ', c);
 
   if (c < 100) then 
     writeln ('The sum of your numbers is small.')
