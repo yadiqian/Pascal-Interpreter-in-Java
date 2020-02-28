@@ -1,5 +1,5 @@
 program test13;
-(* Test while loop *)
+(* Test while loop, continue and break keywords in while loop *)
 var
   a: real;
   b: boolean;

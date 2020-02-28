@@ -1,4 +1,4 @@
-program exLocal;
+program test18;
 (* Test static scoping *)
 var
   a, b, c: real;

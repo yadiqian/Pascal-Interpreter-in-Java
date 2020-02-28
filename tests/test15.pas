@@ -1,5 +1,5 @@
 program test15;
-(* Test function *)
+(* Test functions *)
 var
    a, b, ret : real;
 
@@ -18,6 +18,12 @@ begin
   max := result;
 end;
 
+function xorVal(a, b: boolean; c: real): boolean;
+begin
+  writeln(c);
+  xorVal := a xor b;
+end;
+
 begin
   a := 100.0;
   b := 200.0;
@@ -27,6 +33,8 @@ begin
 
   ret := max(a, b);   
   writeln( 'Max value is: ', ret );
+
+  writeln(xorVal(true, true, max(ret, 1010)));
 end.
 
 (*
@@ -34,5 +42,7 @@ Expected output:
 
 Max value is: 1020
 Max value is: 200
+1010
+FALSE
 
 *)
